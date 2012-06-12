@@ -1285,8 +1285,12 @@ if (!window.jq || typeof (jq) !== "function") {
                 if (!settings.crossDomain) settings.crossDomain = /^([\w-]+:)?\/\/([^\/]+)/.test(settings.url) &&
                     RegExp.$2 != window.location.host;
                 
-                if(!settings.crossDomain)
+                if(!settings.crossDomain){
                     settings.headers = $.extend({'X-Requested-With': 'XMLHttpRequest'}, settings.headers);
+                    var token = $.rails.getCSRFToken();
+                    if(token)
+                      settings.headers = $.extend({'X-CSRF-Token': token}, settings.headers);
+                }
                 var abortTimeout;
                 var context = settings.context;
                 var protocol = /^([\w-]+:)\/\//.test(settings.url) ? RegExp.$1 : window.location.protocol;
