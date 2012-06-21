@@ -181,7 +181,7 @@
       if (target) { form.attr('target', target); }
 
       $('body').append(form.hide().append(metadata_input));
-      rails.fire(form, 'submit');
+      if(rails.fire(form, 'submit') !== false){ form[0].submit(); }
     },
 
     /* Disables form elements:
