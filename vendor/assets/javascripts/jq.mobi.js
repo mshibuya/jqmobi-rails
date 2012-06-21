@@ -28,34 +28,6 @@ if (!window.jq || typeof (jq) !== "function") {
         fragementRE=/^\s*<(\w+)[^>]*>/,
         _attrCache={};
         
-        
-        /**
-         * internal function to use domfragments for insertion
-         *
-         * @api private
-        */
-        function _insertFragments(jqm,container,insert){
-            var frag=document.createDocumentFragment();
-            if(insert){
-                for(var j=jqm.length-1;j>=0;j--)
-                {
-                    frag.insertBefore(jqm[j],frag.firstChild);
-                }
-                container.insertBefore(frag,container.firstChild);
-            
-            }
-            else {
-            
-                for(var j=0;j<jqm.length;j++)
-                    frag.appendChild(jqm[j]);
-                container.appendChild(frag);
-            }
-            frag=null;
-        }
-                
-            
-                    
-        
 
         /**
          * Internal function to test if a class name fits in a regular expression
@@ -797,11 +769,11 @@ if (!window.jq || typeof (jq) !== "function") {
                     element = $(element);
                 var i;
                 
-                
                 for (i = 0; i < this.length; i++) {
                     if (element.length && typeof element != "string") {
                         element = $(element);
-                        _insertFragments(element,this[i],insert);
+                        for (var j = 0; j < element.length; j++)
+                            insert != undefined ? this[i].insertBefore(element[j], this[i].firstChild) : this[i].appendChild(element[j]);
                     } else {
                         var obj =fragementRE.test(element)?$(element):undefined;
                         if (obj == undefined || obj.length == 0) {
@@ -810,7 +782,10 @@ if (!window.jq || typeof (jq) !== "function") {
                         if (obj.nodeName != undefined && obj.nodeName.toLowerCase() == "script" && (!obj.type || obj.type.toLowerCase() === 'text/javascript')) {
                             window.eval(obj.innerHTML);
                         } else if(obj instanceof $jqm) {
-                            _insertFragments(obj,this[i],insert);
+                            for(var k=0;k<obj.length;k++)
+                            {
+                                insert != undefined ? this[i].insertBefore(obj[k], this[i].firstChild) : this[i].appendChild(obj[k]);
+                            }
                         }
                         else {
                             insert != undefined ? this[i].insertBefore(obj, this[i].firstChild) : this[i].appendChild(obj);
@@ -899,8 +874,8 @@ if (!window.jq || typeof (jq) !== "function") {
                 return {
                     left: obj.left + window.pageXOffset,
                     top: obj.top + window.pageYOffset,
-                    width: parseInt(obj.width),
-                    height: parseInt(obj.height)
+                    width: parseInt(this[0].style.width),
+                    height: parseInt(this[0].style.height)
                 };
             },
             /**
@@ -1239,9 +1214,6 @@ if (!window.jq || typeof (jq) !== "function") {
                 if (!settings.headers)
                     settings.headers = {};
                
-                if(!('async' in settings)||settings.async!==false)
-                    settings.async=true;
-                
                 if (!settings.dataType)
                     settings.dataType = "text/html";
                 else {
@@ -1285,12 +1257,8 @@ if (!window.jq || typeof (jq) !== "function") {
                 if (!settings.crossDomain) settings.crossDomain = /^([\w-]+:)?\/\/([^\/]+)/.test(settings.url) &&
                     RegExp.$2 != window.location.host;
                 
-                if(!settings.crossDomain){
+                if(!settings.crossDomain)
                     settings.headers = $.extend({'X-Requested-With': 'XMLHttpRequest'}, settings.headers);
-                    var token = $.rails.getCSRFToken();
-                    if(token)
-                      settings.headers = $.extend({'X-CSRF-Token': token}, settings.headers);
-                }
                 var abortTimeout;
                 var context = settings.context;
                 var protocol = /^([\w-]+:)\/\//.test(settings.url) ? RegExp.$1 : window.location.protocol;
@@ -1323,7 +1291,7 @@ if (!window.jq || typeof (jq) !== "function") {
                         settings.complete.call(context, xhr, error ? 'error' : 'success');
                     }
                 };
-                xhr.open(settings.type, settings.url, settings.async);
+                xhr.open(settings.type, settings.url, true);
                 
                 if (settings.contentType)
                     settings.headers['Content-Type'] = settings.contentType;

@@ -796,16 +796,15 @@
 	        			</div></div>';
                 $(this.container).append($(markup));
                 
-                var $el=$("#"+this.id);
-                $el.bind("close", function(){
+                $("#" + this.id).bind("close", function(){
                 	self.hide();
                 })
                 
                 if (this.cancelOnly) {
-                    $el.find('A#action').hide();
-                    $el.find('A#cancel').addClass('center');
+                    $("#" + this.id).find('A#action').hide();
+                    $("#" + this.id).find('A#cancel').addClass('center');
                 }
-                $el.find('A').each(function() {
+                $("#" + this.id).find('A').each(function() {
                     var button = $(this);
                     button.bind('click', function(e) {
                         if (button.attr('id') == 'cancel') {
@@ -821,8 +820,8 @@
                 });
                 self.positionPopup();
                 $.blockUI(0.5);
-                $el.removeClass('hidden');
-                $el.bind("orientationchange", function() {
+                $('#' + self.id).removeClass('hidden');
+                $('#' + self.id).bind("orientationchange", function() {
                     self.positionPopup();
                 });
                 
@@ -842,7 +841,6 @@
             remove: function() {
                 var self = this;
                 var $el=$("#"+self.id);
-                $el.unbind("close");
                 $el.find('BUTTON#action').unbind('click');
                 $el.find('BUTTON#cancel').unbind('click');
                 $el.unbind("orientationchange").remove();
@@ -1447,7 +1445,6 @@
         hasLaunched: false,
         launchCompleted: false,
         activeDiv: "",
-        customClickHandler:"",
         
         
         css3animate: function(el, opts) {
@@ -1661,37 +1658,26 @@
             br = bottom right
             tr = top right (default)
            ```
-           $.ui.updateBadge('#mydiv','3','bl','green');
+           $.ui.updateBadge('#mydiv','3','bl');
            ```
          * @param {String} target
          * @param {String} Value
          * @param {String} [position]         
-         * @param {String|Object} [color or CSS hash]         
-         * @title $.ui.updateBadge(target,value,[position],[color])
+         * @title $.ui.updateBadge(target,value,[position])
          */
-        updateBadge: function(target, value, position,color) {
+        updateBadge: function(target, value, position) {
             if (position === undefined)
                 position = "";
+            
             if (target[0] != "#")
                 target = "#" + target;
             var badge = jq(target).find("span.jq-badge");
-            
             if (badge.length == 0) {
                 if (jq(target).css("position") != "absolute")
                     jq(target).css("position", "relative");
-                badge=jq("<span class='jq-badge " + position + "'>" + value + "</span>");    
-                jq(target).append(badge);
+                badge = jq(target).append("<span class='jq-badge " + position + "'>" + value + "</span>");
             } else
                 badge.html(value);
-            
-            
-            if(jq.isObject(color)){
-                badge.css(color);
-            }
-            else if(color){
-                badge.css("background",color);
-            }
-            
             badge.data("ignore-pressed","true");
         
         },
@@ -1976,19 +1962,10 @@
             var el = $am(id);
             if (!el)
                 return;
-            
-            var newDiv = document.createElement("div");
-	        newDiv.innerHTML = content;
-	        if($(newDiv).children('.panel') && $(newDiv).children('.panel').length > 0) newDiv = $(newDiv).children('.panel').get();
-	            
-             
-            
             if (el.getAttribute("scrolling") && el.getAttribute("scrolling").toLowerCase() == "no")
-               el.innerHTML = newDiv.innerHTML;
+                el.innerHTML = content;
             else
-                el.childNodes[0].innerHTML = newDiv.innerHTML;
-                
-            if($(newDiv).title) el.title = $(newDiv).title;
+                el.childNodes[0].innerHTML = content;
         },
         /**
          * Dynamically create a new panel on the fly.  It wires events, creates the scroller, applies Android fixes, etc.
@@ -2003,13 +1980,10 @@
         addContentDiv: function(el, content, title, refresh, refreshFunc) {
             var myEl = $am(el);
             if (!myEl) {
-            	var newDiv = document.createElement("div");
-	            newDiv.innerHTML = content;
-	            if($(newDiv).children('.panel') && $(newDiv).children('.panel').length > 0) newDiv = $(newDiv).children('.panel').get();
-	            
-				if(!newDiv.title) newDiv.title = title;
-				var newId = (newDiv.id)? newDiv.id : el; //figure out the new id - either the id from the loaded div.panel or the crc32 hash
-				newDiv.id = newId;
+                var newDiv = document.createElement("div");
+                newDiv.id = el;
+                newDiv.title = title;
+                newDiv.innerHTML = content;
             } else {
                 newDiv = myEl;
             }
@@ -2019,7 +1993,7 @@
             myEl = null;
             that.addDivAndScroll(newDiv, refresh, refreshFunc);
             newDiv = null;
-            return newId;
+            return;
         },
         /**
          *  Takes a div and sets up scrolling for it..
@@ -2194,16 +2168,15 @@
            
             
             
-            //Fire unload first
+            var fnc = what.getAttribute("data-load");
+            if (typeof fnc == "string" && window[fnc]) {
+                window[fnc](what);
+            }
             if (oldDiv) {
                 fnc = oldDiv.getAttribute("data-unload");
                 if (typeof fnc == "string" && window[fnc]) {
                     window[fnc](oldDiv);
                 }
-            }
-            var fnc = what.getAttribute("data-load");
-            if (typeof fnc == "string" && window[fnc]) {
-                window[fnc](what);
             }
             if (this.menu.style.display == "block")
                 this.toggleSideMenu(); //Close on phones to prevent orientation change bug.
@@ -2219,12 +2192,12 @@
             var scripts = div.getElementsByTagName("script");
             div = null;
             for (var i = 0; i < scripts.length; i++) {
-                if (scripts[i].src.length > 0 && !this.remoteJSPages[scripts[i].src]) {
+                if (scripts[i].src.length > 0 && !that.remoteJSPages[scripts[i].src]) {
                     var doc = document.createElement("script");
                     doc.type = scripts[i].type;
                     doc.src = scripts[i].src;
                     document.getElementsByTagName('head')[0].appendChild(doc);
-                    this.remoteJSPages[scripts[i].src] = 1;
+                    that.remoteJSPages[scripts[i].src] = 1;
                     doc = null;
                 } else {
                     window.eval(scripts[i].innerHTML);
@@ -2260,7 +2233,7 @@
 
                     //ajax div already exists.  Let's see if we should be refreshing it.
                     loadAjax = false;
-                    if ((anchor && anchor.getAttribute("data-refresh-ajax") === 'true') || (anchor && anchor.refresh && anchor.refresh === true)||this.isAjaxApp) {
+                    if (anchor.getAttribute("data-refresh-ajax") === 'true' || (anchor.refresh && anchor.refresh === true)||this.isAjaxApp) {
                         loadAjax = true;
                     } else
                         target = "#" + urlHash;
@@ -2285,8 +2258,9 @@
                         //Here we check to see if we are retaining the div, if so update it
                         if ($am(urlHash) !== undefined) {
                             that.updateContentDiv(urlHash, xmlhttp.responseText);
-                            if(!$am(urlHash).title) $am(urlHash).title = anchor.title ? anchor.title : target;
-                        } else if (that.isAjaxApp || anchor.getAttribute("data-persist-ajax")) {    
+                            $am(urlHash).title = anchor.title ? anchor.title : target;
+                        } else if (anchor.getAttribute("data-persist-ajax")||that.isAjaxApp) {
+                            
                             var refresh = (anchor.getAttribute("data-pull-scroller") === 'true') ? true : false;
                             refreshFunction = refresh ? 
                             function() {
@@ -2294,8 +2268,8 @@
                                 that.loadContent(target, newTab, back, transition, anchor);
                                 anchor.refresh = false;
                             } : null
-                            urlHash = that.addContentDiv(urlHash, xmlhttp.responseText, refresh, refreshFunction);
-                            if(!$am(urlHash).title) $am(urlHash).title = anchor.title ? anchor.title : target;
+                            that.addContentDiv(urlHash, xmlhttp.responseText, refresh, refreshFunction);
+                            $am(urlHash).title = anchor.title ? anchor.title : target;
                         } else {
                             that.updateContentDiv("jQui_ajax", xmlhttp.responseText);
                             $am("jQui_ajax").title = anchor.title ? anchor.title : target;
@@ -2309,7 +2283,8 @@
                         that.parseScriptTags(div);
                         if (doReturn)
                             return;
-                        return that.loadContent("#" + urlHash, false, back, null);
+                        
+                        return that.loadContent("#" + urlHash);
                     
                     }
                 };
@@ -2791,12 +2766,11 @@
     function NoClickDelay(el) {
         if (typeof (el) === "string")
             el = document.getElementById(el);
-        el.addEventListener('touchstart', this, false);
+        el.addEventListener('touchstart', this, true);
     }
     var prevClickField;
     var prevPanel;
     var prevField;
-    var closeField;
     NoClickDelay.prototype = {
         dX: 0,
         dY: 0,
@@ -2825,24 +2799,10 @@
             if (theTarget.nodeType == 3)
                 theTarget = theTarget.parentNode;
             
-            if(closeField)
-                clearTimeout(closeField),closeField=null;
             if(prevField){
+                prevField.blur();
                 prevField=null;
-                var field = document.createElement('input');
-                field.setAttribute('type', 'text');
-                field.id="myhack";
-                document.body.appendChild(field);
-
-                closeField=setTimeout(function() {
-                    field.focus();
-                    setTimeout(function() {
-                        field.blur();
-                        field.parentNode.removeChild(field);
-                    }, 50);
-                }, 350);
             }
-           
             if(prevPanel){
                 //prevField.blur();
                 prevPanel.css("-webkit-transform","translate3d(0px,0px,0px)");
@@ -2853,12 +2813,11 @@
             
             var tagname = theTarget.tagName.toLowerCase();
             var type=theTarget.type||"";
-            if((tagname=="a"&& theTarget.href.indexOf("tel:")===0)||((tagname=="input")||tagname=="textarea"||tagname=="select")&&type!="checkbox"&&type!="radio"){
-                
+            if((tagname=="a"&& theTarget.href.indexOf("tel:")===0)||((tagname=="input")||tagname=="textarea"||tagname=="select")){
+                prevField=theTarget;
                 if(jq.os.android&&$.ui.fixAndroidInputs){
-                    prevField=theTarget;
                     theTarget.focus();
-                    //prevField=theTarget;
+                    prevField=theTarget;
                     prevPanel=$(theTarget).closest(".panel");
                     prevPanel.css("left","-100%");
                     prevPanel.css("-webkit-transition-duration","0ms");
@@ -2866,28 +2825,25 @@
                     prevPanel.css("position","absolute");
                     return;
                 }
-                
             }
             else
                 e.preventDefault();
             this.moved = false;
             document.addEventListener('touchmove', this, true);
             document.addEventListener('touchend', this, true);
-            
         },
         
         onTouchMove: function(e) {
-            
             this.moved = true;
             this.cX = e.touches[0].pageX - this.dX;
             this.cY = e.touches[0].pageY - this.dY;
-            
            // e.preventDefault();
-           return false;
         },
+        
         onTouchEnd: function(e) {
-            document.removeEventListener('touchmove', this, true);
-            document.removeEventListener('touchend', this, true);
+            
+            document.removeEventListener('touchmove', this, false);
+            document.removeEventListener('touchend', this, false);
             
             if ((!jq.os.blackberry && !this.moved) || (jq.os.blackberry && (Math.abs(this.cX) < 5 || Math.abs(this.cY) < 5))) {
                 var theTarget = e.target;
@@ -2897,13 +2853,10 @@
                 var theEvent = document.createEvent('MouseEvents');
                 theEvent.initEvent('click', true, true);
                 theTarget.dispatchEvent(theEvent);
-                e.preventDefault();
+                
             }
-            
             prevClickField = null;
             this.dX = this.cX = this.cY = this.dY = 0;
-            return false;
-            
         }
     };
     
@@ -2912,6 +2865,7 @@
     jq(document).ready(function() {
         document.body.addEventListener('touchmove', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             window.scrollTo(1, 1);
         }, false);
         if (!jq.os.desktop)
@@ -2941,17 +2895,13 @@
         if (theTarget.tagName.toLowerCase() != "a" && theTarget.parentNode)
             parent = true, theTarget = theTarget.parentNode; //let's try the parent so <a href="#foo"><img src="whatever.jpg"></a> will work
         if (theTarget.tagName.toLowerCase() == "a") {
-        
-        
-            var custom=(typeof jq.ui.customClickHandler=="function")?jq.ui.customClickHandler:false;
-            if(custom!==false&&jq.ui.customClickHandler(theTarget.href)){
-               return true;
-            }
             if (theTarget.href.toLowerCase().indexOf("javascript:") !== -1 || theTarget.getAttribute("data-ignore")) {
                 return false;
             }
             
-          
+            if (theTarget.onclick && !jq.os.desktop) {
+                theTarget.onclick();
+            }
             
             if(theTarget.href.indexOf("tel:")===0)
                return false;
@@ -2974,12 +2924,11 @@
             
             var mytransition = theTarget.getAttribute("data-transition");
             var resetHistory = theTarget.getAttribute("data-resetHistory");
-            var back = (theTarget.getAttribute("data-reverse") && theTarget.getAttribute("data-reverse") == 'true')?true:false;
+            
             resetHistory = resetHistory && resetHistory.toLowerCase() == "true" ? true : false;
             
             var href = theTarget.hash.length > 0 ? theTarget.hash : theTarget.href;
-            jq.ui.loadContent(href, resetHistory, back, mytransition, theTarget);
-
+            jq.ui.loadContent(href, resetHistory, 0, mytransition, theTarget);
             return true;
         }
     }
@@ -3053,7 +3002,6 @@
                 touch.el.trigger('swipe') &&
                 touch.el.trigger('swipe' + (swipeDirection(touch.x1, touch.x2, touch.y1, touch.y2)));
                 touch.x1 = touch.x2 = touch.y1 = touch.y2 = touch.last = 0;
-                touch={};
             } else if ('last' in touch) {
                 touch.el.trigger('tap');
                 touchTimeout = setTimeout(function() {

@@ -101,16 +101,15 @@
 	        			</div></div>';
                 $(this.container).append($(markup));
                 
-                var $el=$("#"+this.id);
-                $el.bind("close", function(){
+                $("#" + this.id).bind("close", function(){
                 	self.hide();
                 })
                 
                 if (this.cancelOnly) {
-                    $el.find('A#action').hide();
-                    $el.find('A#cancel').addClass('center');
+                    $("#" + this.id).find('A#action').hide();
+                    $("#" + this.id).find('A#cancel').addClass('center');
                 }
-                $el.find('A').each(function() {
+                $("#" + this.id).find('A').each(function() {
                     var button = $(this);
                     button.bind('click', function(e) {
                         if (button.attr('id') == 'cancel') {
@@ -126,8 +125,8 @@
                 });
                 self.positionPopup();
                 $.blockUI(0.5);
-                $el.removeClass('hidden');
-                $el.bind("orientationchange", function() {
+                $('#' + self.id).removeClass('hidden');
+                $('#' + self.id).bind("orientationchange", function() {
                     self.positionPopup();
                 });
                 
@@ -147,7 +146,6 @@
             remove: function() {
                 var self = this;
                 var $el=$("#"+self.id);
-                $el.unbind("close");
                 $el.find('BUTTON#action').unbind('click');
                 $el.find('BUTTON#cancel').unbind('click');
                 $el.unbind("orientationchange").remove();
