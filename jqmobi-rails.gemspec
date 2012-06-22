@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["mit.shibuya@gmail.com"]
   gem.description   = %q{This gem provides jQMobi and jQMobi-ujs driver for Rails3 application.}
   gem.summary       = %q{jQMobi integration for Rails.}
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/mshibuya/jqmobi-rails"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
