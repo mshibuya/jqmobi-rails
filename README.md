@@ -18,7 +18,12 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Add these lines to the top of your app/assets/javascripts/application.js file:
+
+```javascript
+//= require jq.mobi
+//= require jq.mobi_ujs
+```
 
 ## Contributing
 
