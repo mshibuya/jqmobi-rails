@@ -796,15 +796,16 @@
 	        			</div></div>';
                 $(this.container).append($(markup));
                 
-                $("#" + this.id).bind("close", function(){
+                var $el=$("#"+this.id);
+                $el.bind("close", function(){
                 	self.hide();
                 })
                 
                 if (this.cancelOnly) {
-                    $("#" + this.id).find('A#action').hide();
-                    $("#" + this.id).find('A#cancel').addClass('center');
+                    $el.find('A#action').hide();
+                    $el.find('A#cancel').addClass('center');
                 }
-                $("#" + this.id).find('A').each(function() {
+                $el.find('A').each(function() {
                     var button = $(this);
                     button.bind('click', function(e) {
                         if (button.attr('id') == 'cancel') {
@@ -820,8 +821,8 @@
                 });
                 self.positionPopup();
                 $.blockUI(0.5);
-                $('#' + self.id).removeClass('hidden');
-                $('#' + self.id).bind("orientationchange", function() {
+                $el.removeClass('hidden');
+                $el.bind("orientationchange", function() {
                     self.positionPopup();
                 });
                 
@@ -841,6 +842,7 @@
             remove: function() {
                 var self = this;
                 var $el=$("#"+self.id);
+                $el.unbind("close");
                 $el.find('BUTTON#action').unbind('click');
                 $el.find('BUTTON#cancel').unbind('click');
                 $el.unbind("orientationchange").remove();
@@ -1445,6 +1447,7 @@
         hasLaunched: false,
         launchCompleted: false,
         activeDiv: "",
+        customClickHandler:"",
         
         
         css3animate: function(el, opts) {
@@ -1658,26 +1661,37 @@
             br = bottom right
             tr = top right (default)
            ```
-           $.ui.updateBadge('#mydiv','3','bl');
+           $.ui.updateBadge('#mydiv','3','bl','green');
            ```
          * @param {String} target
          * @param {String} Value
          * @param {String} [position]         
-         * @title $.ui.updateBadge(target,value,[position])
+         * @param {String|Object} [color or CSS hash]         
+         * @title $.ui.updateBadge(target,value,[position],[color])
          */
-        updateBadge: function(target, value, position) {
+        updateBadge: function(target, value, position,color) {
             if (position === undefined)
                 position = "";
-            
             if (target[0] != "#")
                 target = "#" + target;
             var badge = jq(target).find("span.jq-badge");
+            
             if (badge.length == 0) {
                 if (jq(target).css("position") != "absolute")
                     jq(target).css("position", "relative");
-                badge = jq(target).append("<span class='jq-badge " + position + "'>" + value + "</span>");
+                badge=jq("<span class='jq-badge " + position + "'>" + value + "</span>");    
+                jq(target).append(badge);
             } else
                 badge.html(value);
+            
+            
+            if(jq.isObject(color)){
+                badge.css(color);
+            }
+            else if(color){
+                badge.css("background",color);
+            }
+            
             badge.data("ignore-pressed","true");
         
         },
@@ -1962,10 +1976,19 @@
             var el = $am(id);
             if (!el)
                 return;
+            
+            var newDiv = document.createElement("div");
+	        newDiv.innerHTML = content;
+	        if($(newDiv).children('.panel') && $(newDiv).children('.panel').length > 0) newDiv = $(newDiv).children('.panel').get();
+	            
+             
+            
             if (el.getAttribute("scrolling") && el.getAttribute("scrolling").toLowerCase() == "no")
-                el.innerHTML = content;
+               el.innerHTML = newDiv.innerHTML;
             else
-                el.childNodes[0].innerHTML = content;
+                el.childNodes[0].innerHTML = newDiv.innerHTML;
+                
+            if($(newDiv).title) el.title = $(newDiv).title;
         },
         /**
          * Dynamically create a new panel on the fly.  It wires events, creates the scroller, applies Android fixes, etc.
@@ -1980,10 +2003,13 @@
         addContentDiv: function(el, content, title, refresh, refreshFunc) {
             var myEl = $am(el);
             if (!myEl) {
-                var newDiv = document.createElement("div");
-                newDiv.id = el;
-                newDiv.title = title;
-                newDiv.innerHTML = content;
+            	var newDiv = document.createElement("div");
+	            newDiv.innerHTML = content;
+	            if($(newDiv).children('.panel') && $(newDiv).children('.panel').length > 0) newDiv = $(newDiv).children('.panel').get();
+	            
+				if(!newDiv.title&&title) newDiv.title = title;
+				var newId = (newDiv.id)? newDiv.id : el; //figure out the new id - either the id from the loaded div.panel or the crc32 hash
+				newDiv.id = newId;
             } else {
                 newDiv = myEl;
             }
@@ -1993,7 +2019,7 @@
             myEl = null;
             that.addDivAndScroll(newDiv, refresh, refreshFunc);
             newDiv = null;
-            return;
+            return newId;
         },
         /**
          *  Takes a div and sets up scrolling for it..
@@ -2168,15 +2194,16 @@
            
             
             
-            var fnc = what.getAttribute("data-load");
-            if (typeof fnc == "string" && window[fnc]) {
-                window[fnc](what);
-            }
+            //Fire unload first
             if (oldDiv) {
                 fnc = oldDiv.getAttribute("data-unload");
                 if (typeof fnc == "string" && window[fnc]) {
                     window[fnc](oldDiv);
                 }
+            }
+            var fnc = what.getAttribute("data-load");
+            if (typeof fnc == "string" && window[fnc]) {
+                window[fnc](what);
             }
             if (this.menu.style.display == "block")
                 this.toggleSideMenu(); //Close on phones to prevent orientation change bug.
@@ -2192,12 +2219,12 @@
             var scripts = div.getElementsByTagName("script");
             div = null;
             for (var i = 0; i < scripts.length; i++) {
-                if (scripts[i].src.length > 0 && !that.remoteJSPages[scripts[i].src]) {
+                if (scripts[i].src.length > 0 && !this.remoteJSPages[scripts[i].src]) {
                     var doc = document.createElement("script");
                     doc.type = scripts[i].type;
                     doc.src = scripts[i].src;
                     document.getElementsByTagName('head')[0].appendChild(doc);
-                    that.remoteJSPages[scripts[i].src] = 1;
+                    this.remoteJSPages[scripts[i].src] = 1;
                     doc = null;
                 } else {
                     window.eval(scripts[i].innerHTML);
@@ -2233,7 +2260,7 @@
 
                     //ajax div already exists.  Let's see if we should be refreshing it.
                     loadAjax = false;
-                    if (anchor.getAttribute("data-refresh-ajax") === 'true' || (anchor.refresh && anchor.refresh === true)||this.isAjaxApp) {
+                    if ((anchor && anchor.getAttribute("data-refresh-ajax") === 'true') || (anchor && anchor.refresh && anchor.refresh === true)||this.isAjaxApp) {
                         loadAjax = true;
                     } else
                         target = "#" + urlHash;
@@ -2258,9 +2285,8 @@
                         //Here we check to see if we are retaining the div, if so update it
                         if ($am(urlHash) !== undefined) {
                             that.updateContentDiv(urlHash, xmlhttp.responseText);
-                            $am(urlHash).title = anchor.title ? anchor.title : target;
-                        } else if (anchor.getAttribute("data-persist-ajax")||that.isAjaxApp) {
-                            
+                            if(!$am(urlHash).title) $am(urlHash).title = anchor.title ? anchor.title : target;
+                        } else if (that.isAjaxApp || anchor.getAttribute("data-persist-ajax")) {    
                             var refresh = (anchor.getAttribute("data-pull-scroller") === 'true') ? true : false;
                             refreshFunction = refresh ? 
                             function() {
@@ -2268,8 +2294,7 @@
                                 that.loadContent(target, newTab, back, transition, anchor);
                                 anchor.refresh = false;
                             } : null
-                            that.addContentDiv(urlHash, xmlhttp.responseText, refresh, refreshFunction);
-                            $am(urlHash).title = anchor.title ? anchor.title : target;
+                            that.addContentDiv(urlHash, xmlhttp.responseText,anchor.title ? anchor.title : target, refresh, refreshFunction);
                         } else {
                             that.updateContentDiv("jQui_ajax", xmlhttp.responseText);
                             $am("jQui_ajax").title = anchor.title ? anchor.title : target;
@@ -2283,8 +2308,7 @@
                         that.parseScriptTags(div);
                         if (doReturn)
                             return;
-                        
-                        return that.loadContent("#" + urlHash);
+                        return that.loadContent("#" + urlHash, false, back, null);
                     
                     }
                 };
@@ -2575,9 +2599,8 @@
                 //window.setTimeout(function() {
                 var loadFirstDiv=function(){
                     //activeDiv = firstDiv;
-                    if (defaultHash.length > 0 && that.loadDefaultHash&&defaultHash!=("#"+that.firstDiv.id))
+                    if (defaultHash.length > 0 && that.loadDefaultHash&&defaultHash!=("#"+that.firstDiv.id)&&$(defaultHash).length>0)
                     {
-                        
                         that.activeDiv=$(defaultHash).get();
                         jq("#header #backButton").css("visibility","visible");
                         that.setBackButtonText(that.activeDiv.title)
@@ -2766,11 +2789,12 @@
     function NoClickDelay(el) {
         if (typeof (el) === "string")
             el = document.getElementById(el);
-        el.addEventListener('touchstart', this, true);
+        el.addEventListener('touchstart', this, false);
     }
     var prevClickField;
     var prevPanel;
     var prevField;
+    var closeField;
     NoClickDelay.prototype = {
         dX: 0,
         dY: 0,
@@ -2799,10 +2823,24 @@
             if (theTarget.nodeType == 3)
                 theTarget = theTarget.parentNode;
             
+            if(closeField)
+                clearTimeout(closeField),closeField=null;
             if(prevField){
-                prevField.blur();
                 prevField=null;
+                var field = document.createElement('input');
+                field.setAttribute('type', 'text');
+                field.id="myhack";
+                document.body.appendChild(field);
+
+                closeField=setTimeout(function() {
+                    field.focus();
+                    setTimeout(function() {
+                        field.blur();
+                        field.parentNode.removeChild(field);
+                    }, 50);
+                }, 350);
             }
+           
             if(prevPanel){
                 //prevField.blur();
                 prevPanel.css("-webkit-transform","translate3d(0px,0px,0px)");
@@ -2813,11 +2851,12 @@
             
             var tagname = theTarget.tagName.toLowerCase();
             var type=theTarget.type||"";
-            if((tagname=="a"&& theTarget.href.indexOf("tel:")===0)||((tagname=="input")||tagname=="textarea"||tagname=="select")){
-                prevField=theTarget;
+            if((tagname=="a"&& theTarget.href.indexOf("tel:")===0)||((tagname=="input")||tagname=="textarea"||tagname=="select")&&type!="checkbox"&&type!="radio"){
+                
                 if(jq.os.android&&$.ui.fixAndroidInputs){
-                    theTarget.focus();
                     prevField=theTarget;
+                    theTarget.focus();
+                    //prevField=theTarget;
                     prevPanel=$(theTarget).closest(".panel");
                     prevPanel.css("left","-100%");
                     prevPanel.css("-webkit-transition-duration","0ms");
@@ -2825,25 +2864,28 @@
                     prevPanel.css("position","absolute");
                     return;
                 }
+                
             }
             else
                 e.preventDefault();
             this.moved = false;
             document.addEventListener('touchmove', this, true);
             document.addEventListener('touchend', this, true);
+            
         },
         
         onTouchMove: function(e) {
+            
             this.moved = true;
             this.cX = e.touches[0].pageX - this.dX;
             this.cY = e.touches[0].pageY - this.dY;
-           // e.preventDefault();
-        },
-        
-        onTouchEnd: function(e) {
             
-            document.removeEventListener('touchmove', this, false);
-            document.removeEventListener('touchend', this, false);
+           // e.preventDefault();
+           return false;
+        },
+        onTouchEnd: function(e) {
+            document.removeEventListener('touchmove', this, true);
+            document.removeEventListener('touchend', this, true);
             
             if ((!jq.os.blackberry && !this.moved) || (jq.os.blackberry && (Math.abs(this.cX) < 5 || Math.abs(this.cY) < 5))) {
                 var theTarget = e.target;
@@ -2853,10 +2895,13 @@
                 var theEvent = document.createEvent('MouseEvents');
                 theEvent.initEvent('click', true, true);
                 theTarget.dispatchEvent(theEvent);
-                
+                e.preventDefault();
             }
+            
             prevClickField = null;
             this.dX = this.cX = this.cY = this.dY = 0;
+            return false;
+            
         }
     };
     
@@ -2865,7 +2910,8 @@
     jq(document).ready(function() {
         document.body.addEventListener('touchmove', function(e) {
             e.preventDefault();
-            e.stopPropagation();
+            if(jq.os.android)
+                e.stopPropagation();
             window.scrollTo(1, 1);
         }, false);
         if (!jq.os.desktop)
@@ -2892,16 +2938,20 @@
     
     function checkAnchorClick(theTarget) {
         var parent = false;
-        if (theTarget.tagName.toLowerCase() != "a" && theTarget.parentNode)
+        while (theTarget.tagName && theTarget.tagName.toLowerCase() != "a" && theTarget.parentNode)
             parent = true, theTarget = theTarget.parentNode; //let's try the parent so <a href="#foo"><img src="whatever.jpg"></a> will work
-        if (theTarget.tagName.toLowerCase() == "a") {
+        if (theTarget&&theTarget.tagName&&theTarget.tagName.toLowerCase() == "a") {
+        
+        
+            var custom=(typeof jq.ui.customClickHandler=="function")?jq.ui.customClickHandler:false;
+            if(custom!==false&&jq.ui.customClickHandler(theTarget)){
+               return true;
+            }
             if (theTarget.href.toLowerCase().indexOf("javascript:") !== -1 || theTarget.getAttribute("data-ignore")) {
                 return false;
             }
             
-            if (theTarget.onclick && !jq.os.desktop) {
-                theTarget.onclick();
-            }
+          
             
             if(theTarget.href.indexOf("tel:")===0)
                return false;
@@ -2924,11 +2974,12 @@
             
             var mytransition = theTarget.getAttribute("data-transition");
             var resetHistory = theTarget.getAttribute("data-resetHistory");
-            
+            var back = (theTarget.getAttribute("data-reverse") && theTarget.getAttribute("data-reverse") == 'true')?true:false;
             resetHistory = resetHistory && resetHistory.toLowerCase() == "true" ? true : false;
             
             var href = theTarget.hash.length > 0 ? theTarget.hash : theTarget.href;
-            jq.ui.loadContent(href, resetHistory, 0, mytransition, theTarget);
+            jq.ui.loadContent(href, resetHistory, back, mytransition, theTarget);
+
             return true;
         }
     }
@@ -3002,6 +3053,7 @@
                 touch.el.trigger('swipe') &&
                 touch.el.trigger('swipe' + (swipeDirection(touch.x1, touch.x2, touch.y1, touch.y2)));
                 touch.x1 = touch.x2 = touch.y1 = touch.y2 = touch.last = 0;
+                touch={};
             } else if ('last' in touch) {
                 touch.el.trigger('tap');
                 touchTimeout = setTimeout(function() {

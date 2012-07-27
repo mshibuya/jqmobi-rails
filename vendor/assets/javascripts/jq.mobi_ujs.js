@@ -118,8 +118,7 @@
           // memoized value from clicked submit button
           var button = element.data('ujs:submit-button');
           if (button) {
-            throw "not implemented";
-            //data += '&' + encodeURIComponent(button);
+            data = data + '&' + encodeURIComponent(button.name) + '=' + encodeURIComponent(button.value);
             element.data('ujs:submit-button', null);
           }
         } else if (element.filter(rails.inputChangeSelector).length > 0) {
